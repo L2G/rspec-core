@@ -52,10 +52,37 @@ module RSpec
       #
       # #### Returns
       # * +Fixnum+ - exit status code (0/1)
-      def self.run(args, err=$stderr, out=$stdout)
+      def self.run(args, err=$stderr, out=nil)
         trap_interrupt
         options = ConfigurationOptions.new(args)
         options.parse_options
+
+        # If out is undefined, the default is normally $stdout. The
+        # exception is Windows without ANSICON installed. In that case,
+        # Win32::Console::ANSI::IO must be used to intercept ANSI control
+        # strings and translate them to the Windows console API.
+        #
+        # NOTE: We don't have to worry about the corner case where the user
+        # asked for color AND has Win32::Console BUT is redirecting output;
+        # Win32::Console is supposed to handle that gracefully.
+
+        out = nil if out == $stdout
+        if out.nil?
+          if options.options[:color] and RSpec.windows_os? and !ENV['ANSICON']
+            begin
+              require 'Win32/Console/ANSI'
+              out = Win32::Console::ANSI::IO.open
+            rescue LoadError
+              warn "Color output on Windows is supported with one of these installed:\n" +
+                   "* win32console (Ruby gem)\n" +
+                   "* ANSICON 1.31 or later (https://github.com/adoxa/ansicon)\n" +
+                   "But neither one could be found, so this may get messy..."
+            end
+          end
+          # Default for when it's not Windows, or ANSICON is installed, or
+          # using Win32::Console failed for whatever reason.
+          out ||= $stdout
+        end
 
         if options.options[:drb]
           require 'rspec/core/drb_command_line'
