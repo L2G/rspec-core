@@ -497,7 +497,7 @@ EOM
       # @private
       def files_or_directories_to_run=(*files)
         files = files.flatten
-        files << default_path if command == 'rspec' && default_path && files.empty?
+        files << default_path if (command == 'rspec' || Runner.running_in_drb?) && default_path && files.empty?
         self.files_to_run = get_files_to_run(files)
       end
 
@@ -774,8 +774,27 @@ EOM
 
       # @private
       def load_spec_files
-        files_to_run.uniq.map {|f| load File.expand_path(f) }
+        files_to_run.uniq.each {|f| load File.expand_path(f) }
         raise_if_rspec_1_is_loaded
+      end
+
+      # @private
+      DEFAULT_FORMATTER = lambda { |string| string }
+
+      # Formats the docstring output using the block provided.
+      #
+      # @example
+      #   # This will strip the descriptions of both examples and example groups.
+      #   RSpec.configure do |config|
+      #     config.format_docstrings { |s| s.strip }
+      #   end
+      def format_docstrings(&block)
+        @format_docstrings_block = block_given? ? block : DEFAULT_FORMATTER
+      end
+
+      # @private
+      def format_docstrings_block
+        @format_docstrings_block ||= DEFAULT_FORMATTER
       end
 
       # @api

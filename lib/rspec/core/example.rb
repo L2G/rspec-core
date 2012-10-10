@@ -49,7 +49,8 @@ module RSpec
       # there is one, otherwise returns a message including the location of the
       # example.
       def description
-        metadata[:description].to_s.empty? ? "example at #{location}" : metadata[:description]
+        description = metadata[:description].to_s.empty? ? "example at #{location}" : metadata[:description]
+        RSpec.configuration.format_docstrings_block.call(description)
       end
 
       # @attr_reader
@@ -260,7 +261,7 @@ An error occurred #{context}
 
       def start(reporter)
         reporter.example_started(self)
-        record :started_at => Time.now
+        record :started_at => RSpec::Core::Time.now
       end
 
       # @private
@@ -290,7 +291,7 @@ An error occurred #{context}
       end
 
       def record_finished(status, results={})
-        finished_at = Time.now
+        finished_at = RSpec::Core::Time.now
         record results.merge(:status => status, :finished_at => finished_at, :run_time => (finished_at - execution_result[:started_at]))
       end
 

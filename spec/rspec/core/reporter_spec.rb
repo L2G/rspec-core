@@ -99,5 +99,22 @@ module RSpec::Core
         yielded.should eq(reporter)
       end
     end
+
+    describe "timing" do
+      it "uses RSpec::Core::Time as to not be affected by changes to time in examples" do
+        formatter = double(:formatter).as_null_object
+        reporter = Reporter.new formatter
+        reporter.start 1
+        Time.stub(:now => Time.utc(2012, 10, 1))
+
+        duration = nil
+        formatter.stub(:dump_summary) do |dur, _, _, _|
+          duration = dur
+        end
+
+        reporter.finish 1234
+        duration.should be < 0.2
+      end
+    end
   end
 end

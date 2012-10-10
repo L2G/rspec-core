@@ -44,7 +44,12 @@ module RSpec
           end
         end
 
-        delegate_to_metadata :description, :described_class, :file_path
+        def description
+          description = metadata[:example_group][:description]
+          RSpec.configuration.format_docstrings_block.call(description)
+        end
+
+        delegate_to_metadata :described_class, :file_path
         alias_method :display_name, :description
         # @private
         alias_method :describes, :described_class
@@ -309,9 +314,12 @@ module RSpec
       # @private
       def self.run_before_all_hooks(example_group_instance)
         return if descendant_filtered_examples.empty?
-        assign_before_all_ivars(superclass.before_all_ivars, example_group_instance)
-        run_hook(:before, :all, example_group_instance)
-        store_before_all_ivars(example_group_instance)
+        begin
+          assign_before_all_ivars(superclass.before_all_ivars, example_group_instance)
+          run_hook(:before, :all, example_group_instance)
+        ensure
+          store_before_all_ivars(example_group_instance)
+        end
       end
 
       # @private

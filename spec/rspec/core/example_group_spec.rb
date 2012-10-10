@@ -19,6 +19,14 @@ module RSpec::Core
       end
     end
 
+    context "when RSpec.configuration.format_docstrings is set to a block" do
+      it "formats the description with that block" do
+        RSpec.configuration.format_docstrings { |s| s.upcase }
+        group = ExampleGroup.describe(' an example ')
+        group.description.should eq(' AN EXAMPLE ')
+      end
+    end
+
     context 'when RSpec.configuration.treat_symbols_as_metadata_keys_with_true_values is set to false' do
       before(:each) do
         RSpec.configure { |c| c.treat_symbols_as_metadata_keys_with_true_values = false }
@@ -560,6 +568,24 @@ module RSpec::Core
         example.metadata[:execution_result].should_not be_nil
         example.metadata[:execution_result][:exception].should_not be_nil
         example.metadata[:execution_result][:exception].message.should eq("error in before all")
+      end
+
+      it "exposes instance variables set in before(:all) from after(:all) even if a before(:all) error occurs" do
+        ivar_value_in_after_hook = nil
+
+        group = ExampleGroup.describe do
+          before(:all) do
+            @an_ivar = :set_in_before_all
+            raise "fail"
+          end
+
+          after(:all) { ivar_value_in_after_hook = @an_ivar }
+
+          it("has a spec") { }
+        end
+
+        group.run
+        ivar_value_in_after_hook.should eq(:set_in_before_all)
       end
 
       it "treats an error in before(:all) as a failure for a spec in a nested group" do

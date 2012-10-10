@@ -6,18 +6,28 @@ module RSpec::Core
     ExampleModule = Module.new
     ExampleClass = Class.new
 
+    it 'does not add a bunch of private methods to Module' do
+      seg_methods = RSpec::Core::SharedExampleGroup.private_instance_methods
+      expect(Module.private_methods & seg_methods).to eq([])
+    end
+
     %w[share_examples_for shared_examples_for shared_examples shared_context].each do |shared_method_name|
       describe shared_method_name do
         it "is exposed to the global namespace" do
           Kernel.should respond_to(shared_method_name)
         end
 
-        it "raises an ArgumentError when adding a second shared example group with the same name" do
+        it "displays a warning when adding a second shared example group with the same name" do
           group = ExampleGroup.describe('example group')
-          group.send(shared_method_name, 'shared group') {}
-          lambda do
-            group.send(shared_method_name, 'shared group') {}
-          end.should raise_error(ArgumentError, "Shared example group 'shared group' already exists")
+          group.send(shared_method_name, 'some shared group') {}
+          original_declaration = [__FILE__, __LINE__ - 1].join(':')
+
+          warning = nil
+          Kernel.stub(:warn) { |msg| warning = msg }
+
+          group.send(shared_method_name, 'some shared group') {}
+          second_declaration = [__FILE__, __LINE__ - 1].join(':')
+          warning.should include('some shared group', original_declaration, second_declaration)
         end
 
         ["name", :name, ExampleModule, ExampleClass].each do |object|
@@ -62,6 +72,8 @@ module RSpec::Core
     end
 
     describe "#share_as" do
+      before { RSpec.stub(:warn) }
+
       it "is exposed to the global namespace" do
         Kernel.should respond_to("share_as")
       end

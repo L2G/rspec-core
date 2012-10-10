@@ -9,9 +9,19 @@ Enhancements
 * Refactor rake task internals (Sam Phippen)
 * Refactor HtmlFormatter (Pete Hodgson)
 * Autotest supports a path to Ruby that contains spaces (dsisnero)
-* Print ordering seed at the start of the spec run to help
-  with troubleshooting ordering failures that occur at file load
-  time (M. Scott Ford)
+* Provide a helpful warning when a shared example group is redefined
+  rather than erroring out with an unhelpful error message
+  (Mark Burns).
+* --default_path can be specified as --default-line; --line_number can be
+  specified as --line-number. Hyphens are more idiomatic command line argument
+  separators (Sam Phippen).
+* A more useful error message is shown when an invalid command line option is
+  used (Jordi Polo).
+* Add `format_docstrings { |str| }` config option. It can be used to
+  apply formatting rules to example group and example docstrings.
+  (Alex Tan)
+* Use dup of Time so reporting isn't clobbered by examples that modify Time
+  without properly restoring it.
 
 Bug fixes
 
@@ -28,6 +38,20 @@ Bug fixes
   `before(:all) hook` (Bradley Schaefer).
 * Make the order spec files are loaded consistent, regardless of the
   order of the files returned by the OS (Jo Liss).
+* Ensure instance variables from `before(:all)` are always exposed
+  from `after(:all)`, even if an error occurs in `before(:all)`
+  (Sam Phippen).
+* `rspec --init` no longer generates an incorrect warning about `--configure`
+  being deprecated (Sam Phippen).
+* Fix pluralization of `1 seconds` (Odin Dutton)
+* Fix ANSICON url (Jarmo Pertman)
+
+Deprecations
+
+* `share_as` is no longer needed. `shared_context` and/or
+  `RSpec::SharedContext` provide better mechanisms (Sam Phippen).
+* Deprecate `RSpec.configuration` with a block (use `RSpec.configure`).
+
 
 ### 2.11.1 / 2012-07-18
 [full changelog](http://github.com/rspec/rspec-core/compare/v2.11.0...v2.11.1)

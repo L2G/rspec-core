@@ -7,6 +7,15 @@ module RSpec::Core
 
     let(:config) { Configuration.new }
 
+    describe "RSpec.configuration with a block" do
+      before { RSpec.stub(:warn_deprecation) }
+
+      it "is deprecated" do
+        RSpec.should_receive(:warn_deprecation)
+        RSpec.configuration {}
+      end
+    end
+
     describe "#load_spec_files" do
 
       it "loads files using load" do
@@ -91,6 +100,16 @@ module RSpec::Core
             config.should_receive(:require).with("rspec/core/mocking/with_#{framework}")
             config.mock_with framework
           end
+        end
+      end
+
+      it "allows rspec-mocks to be configured with a provided block" do
+        mod = Module.new
+
+        RSpec::Mocks.configuration.should_receive(:add_stub_and_should_receive_to).with(mod)
+
+        config.mock_with :rspec do |c|
+          c.add_stub_and_should_receive_to mod
         end
       end
 
@@ -309,6 +328,13 @@ module RSpec::Core
       context "with default default_path" do
         it "loads files in the default path when run by rspec" do
           config.stub(:command) { 'rspec' }
+          config.files_or_directories_to_run = []
+          config.files_to_run.should_not be_empty
+        end
+
+        it "loads files in the default path when run with DRB (e.g., spork)" do
+          config.stub(:command) { 'spork' }
+          RSpec::Core::Runner.stub(:running_in_drb?) { true }
           config.files_or_directories_to_run = []
           config.files_to_run.should_not be_empty
         end
