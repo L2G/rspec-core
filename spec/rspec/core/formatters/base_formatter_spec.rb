@@ -50,6 +50,16 @@ describe RSpec::Core::Formatters::BaseFormatter do
       end
     end
 
+    context "when ruby reports a bogus line number in the stack trace" do
+      it "reports the filename and that it was unable to find the matching line" do
+        exception = mock(:Exception, :backtrace => [ "#{__FILE__}:10000000" ])
+        example = mock(:Example, :file_path => __FILE__)
+
+        msg = formatter.send(:read_failed_line, exception, example)
+        expect(msg).to include("Unable to find matching line")
+      end
+    end
+
     context "when String alias to_int to_i" do
       before do
         String.class_eval do
@@ -91,7 +101,7 @@ describe RSpec::Core::Formatters::BaseFormatter do
     end
 
     it "removes lines from rspec and lines that come before the invocation of the at_exit autorun hook" do
-      formatter.format_backtrace(backtrace).should eq(["./my_spec.rb:5"])
+      formatter.format_backtrace(backtrace, stub.as_null_object).should eq(["./my_spec.rb:5"])
     end
   end
 

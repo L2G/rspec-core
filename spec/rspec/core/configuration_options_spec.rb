@@ -2,7 +2,7 @@ require 'spec_helper'
 require 'ostruct'
 require 'rspec/core/drb_options'
 
-describe RSpec::Core::ConfigurationOptions, :fakefs do
+describe RSpec::Core::ConfigurationOptions, :isolated_directory => true, :isolated_home => true do
   include ConfigOptionsHelper
 
   it "warns when HOME env var is not set", :unless => (RUBY_PLATFORM == 'java') do
@@ -324,14 +324,11 @@ describe RSpec::Core::ConfigurationOptions, :fakefs do
     end
   end
 
-  describe "sources: ~/.rspec, ./.rspec, custom, CLI, and SPEC_OPTS" do
-    before(:each) do
-      FileUtils.mkpath(File.expand_path("~"))
-    end
-
+  describe "sources: ~/.rspec, ./.rspec, ./.rspec-local, custom, CLI, and SPEC_OPTS" do
     it "merges global, local, SPEC_OPTS, and CLI" do
       File.open("./.rspec", "w") {|f| f << "--line 37"}
-      File.open("~/.rspec", "w") {|f| f << "--color"}
+      File.open("./.rspec-local", "w") {|f| f << "--format global"}
+      File.open(File.expand_path("~/.rspec"), "w") {|f| f << "--color"}
       with_env_vars 'SPEC_OPTS' => "--debug --example 'foo bar'" do
         options = parse_options("--drb")
         options[:color].should be_true
@@ -339,6 +336,7 @@ describe RSpec::Core::ConfigurationOptions, :fakefs do
         options[:debug].should be_true
         options[:full_description].should eq([/foo\ bar/])
         options[:drb].should be_true
+        options[:formatters].should eq([['global']])
       end
     end
 
@@ -349,26 +347,33 @@ describe RSpec::Core::ConfigurationOptions, :fakefs do
     end
 
     it "prefers CLI over file options" do
-      File.open("./.rspec", "w") {|f| f << "--format local"}
-      File.open("~/.rspec", "w") {|f| f << "--format global"}
+      File.open("./.rspec", "w") {|f| f << "--format project"}
+      File.open(File.expand_path("~/.rspec"), "w") {|f| f << "--format global"}
       parse_options("--format", "cli")[:formatters].should eq([['cli']])
     end
 
-    it "prefers local file options over global" do
-      File.open("./.rspec", "w") {|f| f << "--format local"}
-      File.open("~/.rspec", "w") {|f| f << "--format global"}
+    it "prefers project file options over global file options" do
+      File.open("./.rspec", "w") {|f| f << "--format project"}
+      File.open(File.expand_path("~/.rspec"), "w") {|f| f << "--format global"}
+      parse_options[:formatters].should eq([['project']])
+    end
+
+    it "prefers local file options over project file options" do
+      File.open("./.rspec-local", "w") {|f| f << "--format local"}
+      File.open("./.rspec", "w") {|f| f << "--format global"}
       parse_options[:formatters].should eq([['local']])
     end
 
     context "with custom options file" do
-      it "ignores local and global options files" do
-        File.open("./.rspec", "w") {|f| f << "--format local"}
-        File.open("~/.rspec", "w") {|f| f << "--format global"}
+      it "ignores project and global options files" do
+        File.open("./.rspec", "w") {|f| f << "--format project"}
+        File.open(File.expand_path("~/.rspec"), "w") {|f| f << "--format global"}
         File.open("./custom.opts", "w") {|f| f << "--color"}
         options = parse_options("-O", "./custom.opts")
         options[:format].should be_nil
         options[:color].should be_true
       end
+
       it "parses -e 'full spec description'" do
         File.open("./custom.opts", "w") {|f| f << "-e 'The quick brown fox jumps over the lazy dog'"}
         options = parse_options("-O", "./custom.opts")

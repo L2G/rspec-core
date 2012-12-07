@@ -1,3 +1,4 @@
+require 'rspec/core/backward_compatibility'
 require 'rspec/core/deprecation'
 require 'rake'
 require 'rake/tasklib'
@@ -62,6 +63,9 @@ module RSpec
 
       # Use rcov for code coverage?
       #
+      # Due to the many ways `rcov` can run, if this option is enabled, it is
+      # required that `require 'rspec/autorun'` appears in `spec_helper`.rb
+      #
       # default:
       #   false
       attr_accessor :rcov
@@ -108,14 +112,14 @@ module RSpec
         @rspec_opts = opts
       end
 
-      def initialize(*args)
+      def initialize(*args, &task_block)
         setup_ivars(args)
-        yield self if block_given?
 
         desc "Run RSpec code examples" unless ::Rake.application.last_comment
 
-        task name do
+        task name, *args do |_, task_args|
           RakeFileUtils.send(:verbose, verbose) do
+            task_block.call(*[self, task_args].slice(0, task_block.arity)) if task_block
             run_task verbose
           end
         end
@@ -141,31 +145,38 @@ module RSpec
       def run_task(verbose)
         files = has_files?
         if files
+          command = spec_command
           begin
-            puts spec_command if verbose
-            success = system(spec_command)
+            puts command if verbose
+            success = system(command)
           rescue
             puts failure_message if failure_message
           end
-          raise("#{spec_command} failed") if fail_on_error unless success
+          raise("#{command} failed") if fail_on_error unless success
         end
       end
 
     private
 
+      if RUBY_VERSION == '1.8.6'
+        def shellescape(string)
+          string.gsub(/"/, '\"').gsub(/'/, "\\\\'")
+        end
+      else
+        def shellescape(string)
+          string.shellescape
+        end
+      end
+
       def files_to_run
         if ENV['SPEC']
           FileList[ ENV['SPEC'] ].sort
         else
-          FileList[ pattern ].sort.map { |f| f.gsub(/"/, '\"').gsub(/'/, "\\\\'") }
+          FileList[ pattern ].sort.map { |f| shellescape(f) }
         end
       end
 
       def spec_command
-        @spec_command ||= default_spec_command
-      end
-
-      def default_spec_command
         cmd_parts = []
         cmd_parts << RUBY
         cmd_parts << ruby_opts

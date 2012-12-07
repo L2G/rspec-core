@@ -10,6 +10,7 @@ Feature: shared examples
       include_examples "name"      # include the examples in the current context
       it_behaves_like "name"       # include the examples in a nested context
       it_should_behave_like "name" # include the examples in a nested context
+      matching metadata            # include the examples in the current context
 
   WARNING: Files containing shared groups must be loaded before the files that
   use them.  While there are conventions to handle this, RSpec does _not_ do
@@ -37,7 +38,7 @@ Feature: shared examples
 
   Scenario: shared examples group included in two groups in one file
     Given a file named "collection_spec.rb" with:
-      """
+      """ruby
       require "set"
 
       shared_examples "a collection" do
@@ -99,7 +100,7 @@ Feature: shared examples
 
   Scenario: Providing context to a shared group using a block
     Given a file named "shared_example_group_spec.rb" with:
-    """
+    """ruby
     require "set"
 
     shared_examples "a collection object" do
@@ -107,7 +108,7 @@ Feature: shared examples
         it "adds objects to the end of the collection" do
           collection << 1
           collection << 2
-          collection.to_a.should eq([1,2])
+          expect(collection.to_a).to match_array([1, 2])
         end
       end
     end
@@ -141,7 +142,7 @@ Feature: shared examples
 
   Scenario: Passing parameters to a shared example group
     Given a file named "shared_example_group_params_spec.rb" with:
-    """
+    """ruby
     shared_examples "a measurable object" do |measurement, measurement_methods|
       measurement_methods.each do |measurement_method|
         it "should return #{measurement} from ##{measurement_method}" do
@@ -177,7 +178,7 @@ Feature: shared examples
 
   Scenario: Aliasing "it_should_behave_like" to "it_has_behavior"
     Given a file named "shared_example_group_spec.rb" with:
-      """
+      """ruby
       RSpec.configure do |c|
         c.alias_it_should_behave_like_to :it_has_behavior, 'has behavior:'
       end
@@ -202,3 +203,20 @@ Feature: shared examples
         has behavior: sortability
           responds to <=>
       """
+
+  Scenario: Sharing metadata automatically includes shared example groups
+    Given a file named "shared_example_metadata_spec.rb" with:
+      """ruby
+      shared_examples "shared stuff", :a => :b do
+        it 'runs wherever the metadata is shared' do
+        end
+      end
+
+      describe String, :a => :b do
+      end
+      """
+      When I run `rspec shared_example_metadata_spec.rb`
+      Then the output should contain:
+        """
+        1 example, 0 failures
+        """

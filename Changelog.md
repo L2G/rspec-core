@@ -1,5 +1,20 @@
-### dev
-[full changelog](http://github.com/rspec/rspec-core/compare/v2.11.1...master)
+### 2.12.1 / 2012-12-01
+[full changelog](http://github.com/rspec/rspec-core/compare/v2.12.0...v2.12.1)
+
+Bug fixes
+
+* Specs are run even if another at\_exit hook calls `exit`. This allows
+  Test::Unit and RSpec to run together. (Suraj N. Kurapati)
+* Fix full doc string concatenation so that it handles the case of a
+  method string (e.g. "#foo") being nested under a context string
+  (e.g. "when it is tuesday"), so that we get "when it is tuesday #foo"
+  rather than "when it is tuesday#foo". (Myron Marston)
+* Restore public API I unintentionally broke in 2.12.0:
+  `RSpec::Core::Formatters::BaseFormatter#format_backtrce(backtrace, example)`
+  (Myron Marston).
+
+### 2.12.0 / 2012-11-12
+[full changelog](http://github.com/rspec/rspec-core/compare/v2.11.1...v2.12.0)
 
 Enhancements
 
@@ -9,24 +24,25 @@ Enhancements
 * Refactor rake task internals (Sam Phippen)
 * Refactor HtmlFormatter (Pete Hodgson)
 * Autotest supports a path to Ruby that contains spaces (dsisnero)
-* Provide a helpful warning when a shared example group is redefined
-  rather than erroring out with an unhelpful error message
+* Provide a helpful warning when a shared example group is redefined.
   (Mark Burns).
-* --default_path can be specified as --default-line; --line_number can be
-  specified as --line-number. Hyphens are more idiomatic command line argument
+* `--default_path` can be specified as `--default-line`. `--line_number` can be
+  specified as `--line-number`. Hyphens are more idiomatic command line argument
   separators (Sam Phippen).
 * A more useful error message is shown when an invalid command line option is
   used (Jordi Polo).
 * Add `format_docstrings { |str| }` config option. It can be used to
   apply formatting rules to example group and example docstrings.
   (Alex Tan)
-* Use dup of Time so reporting isn't clobbered by examples that modify Time
-  without properly restoring it.
+* Add support for an `.rspec-local` options file. This is intended to
+  allow individual developers to set options in a git-ignored file that
+  override the common project options in `.rspec`. (Sam Phippen)
+* Support for mocha 0.13.0. (Andy Lindeman)
 
 Bug fixes
 
-* Remove override of ExampleGroup#ancestors. This is a core ruby method that
-  RSpec shouldn't override. Instead, define ExampleGroup#parent_groups. (Myron
+* Remove override of `ExampleGroup#ancestors`. This is a core ruby method that
+  RSpec shouldn't override. Instead, define `ExampleGroup#parent_groups`. (Myron
   Marston)
 * Limit monkey patching of shared example/context declaration methods
   (`shared_examples_for`, etc.) to just the objects that need it rather than
@@ -37,7 +53,8 @@ Bug fixes
 * Fix `fail_fast` so that it properly exits when an error occurs in a
   `before(:all) hook` (Bradley Schaefer).
 * Make the order spec files are loaded consistent, regardless of the
-  order of the files returned by the OS (Jo Liss).
+  order of the files returned by the OS or the order passed at
+  the command line (Jo Liss and Sam Phippen).
 * Ensure instance variables from `before(:all)` are always exposed
   from `after(:all)`, even if an error occurs in `before(:all)`
   (Sam Phippen).
@@ -45,6 +62,8 @@ Bug fixes
   being deprecated (Sam Phippen).
 * Fix pluralization of `1 seconds` (Odin Dutton)
 * Fix ANSICON url (Jarmo Pertman)
+* Use dup of Time so reporting isn't clobbered by examples that modify Time
+  without properly restoring it. (David Chelimsky)
 
 Deprecations
 

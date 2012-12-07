@@ -1,3 +1,4 @@
+# encoding: utf-8
 require 'spec_helper'
 require 'rspec/core/formatters/text_mate_formatter'
 require 'nokogiri'
@@ -6,10 +7,17 @@ module RSpec
   module Core
     module Formatters
       describe TextMateFormatter do
-        let(:jruby?) { ::RUBY_PLATFORM == 'java' }
-        let(:root)   { File.expand_path("#{File.dirname(__FILE__)}/../../../..") }
-        let(:suffix) { jruby? ? '-jruby' : '' }
+        let(:suffix) {
+          if ::RUBY_PLATFORM == 'java'
+            "-jruby"
+          elsif defined?(Rubinius)
+            "-rbx"
+          else
+            ""
+          end
+        }
 
+        let(:root) { File.expand_path("#{File.dirname(__FILE__)}/../../../..") }
         let(:expected_file) do
           "#{File.dirname(__FILE__)}/text_mate_formatted-#{::RUBY_VERSION}#{suffix}.html"
         end

@@ -4,6 +4,11 @@ module RSpec
   module Core
     # Stores runtime configuration information.
     #
+    # Configuration options are loaded from `~/.rspec`, `.rspec`,
+    # `.rspec-local`, command line switches, and the `SPEC_OPTS` environment
+    # variable (listed in lowest to highest precedence; for example, an option
+    # in `~/.rspec` can be overridden by an option in `.rspec-local`).
+    #
     # @example Standard settings
     #     RSpec.configure do |c|
     #       c.drb          = true
@@ -895,7 +900,7 @@ EOM
         paths.map do |path|
           path = path.gsub(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
           File.directory?(path) ? gather_directories(path, patterns) : extract_location(path)
-        end.flatten
+        end.flatten.sort
       end
 
       def gather_directories(path, patterns)
@@ -1013,6 +1018,7 @@ MESSAGE
       def order_and_seed_from_seed(value)
         order_groups_and_examples(&RANDOM_ORDERING)
         @order, @seed = 'rand', value.to_i
+        [@order, @seed]
       end
 
       def set_order_and_seed(hash)

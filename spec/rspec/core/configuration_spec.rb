@@ -379,6 +379,21 @@ module RSpec::Core
           end
         end
       end
+
+      context 'when given multiple file paths' do
+        it 'orders the files in a consistent ordering, regardless of the given order' do
+          File.stub(:directory?) { false } # fake it into thinking these a full file paths
+
+          files = ['a/b/c_spec.rb', 'c/b/a_spec.rb']
+          config.files_or_directories_to_run = *files
+          ordering_1 = config.files_to_run
+
+          config.files_or_directories_to_run = *(files.reverse)
+          ordering_2 = config.files_to_run
+
+          expect(ordering_1).to eq(ordering_2)
+        end
+      end
     end
 
     %w[pattern= filename_pattern=].each do |setter|
